@@ -1,20 +1,22 @@
-# backend/wiod_loader/load_offline.py
-import pandas as pd
-import os, glob
+import pandas as pd, os, glob
 
 DATA_DIR = "data/wiod2016"
 
 def load_all_years():
-    files = glob.glob(os.path.join(DATA_DIR, "WIOT*_Nov16_ROW.xlsx"))
+    pattern = os.path.join(DATA_DIR, "**", "WIOT*_Nov16_ROW.xlsb")
+    files = glob.glob(pattern, recursive=True)
     if not files:
-        raise FileNotFoundError("فایل‌های WIOD در data/wiod2016 یافت نشد.")
+        raise FileNotFoundError("فایل‌های .xlsb در هیچ زیر-فولدری یافت نشد.")
     data = {}
     for f in files:
-        year = int(os.path.basename(f).split("_")[1])
-        data[year] = pd.read_excel(f, sheet_name="2016")  # یا sheet مناسب
+        year = int(os.path.basename(f).split("_")[0][4:])  # WIOT2000 -> 2000
+        print("خواندن", f)
+        # sheet_name=None → اولین شیت (همان سال)
+        df = pd.read_excel(f, sheet_name=None, engine="pyxlsb")
+        sheet_name = list(df.keys())[0]  # نام واقعی شیت
+        data[year] = df[sheet_name]
     return data
 
 if __name__ == "__main__":
-    print("بارگذاری آفلاین WIOD...")
     d = load_all_years()
-    print("سال‌های موجود:", list(d.keys()))
+    print("سال‌های موجود:", sorted(d.keys()))
